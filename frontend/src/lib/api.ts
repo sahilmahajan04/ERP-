@@ -167,5 +167,6 @@ export const api = {
   get: (url: string, options?: RequestOptions) => request(url, { ...options, method: 'GET' }),
   post: (url: string, body?: any, options?: RequestOptions) => request(url, { ...options, method: 'POST', body: JSON.stringify(body) }),
   put: (url: string, body?: any, options?: RequestOptions) => request(url, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  patch: (url: string, body?: any, options?: RequestOptions) => request(url, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: (url: string, options?: RequestOptions) => request(url, { ...options, method: 'DELETE' }),
 };

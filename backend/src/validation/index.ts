@@ -126,3 +126,32 @@ export const createManufacturingOrderSchema = z.object({
   warehouseId: z.string().uuid(),
   assigneeId: z.string().uuid().nullable().optional(),
 });
+
+// User Management validation schemas
+export const createUserSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  role: z.nativeEnum(Role),
+});
+
+export const updateUserSchema = z.object({
+  email: z.string().email('Invalid email address').optional(),
+  firstName: z.string().min(1, 'First name is required').optional(),
+  lastName: z.string().min(1, 'Last name is required').optional(),
+});
+
+export const updateUserRoleSchema = z.object({
+  role: z.nativeEnum(Role),
+});
+
+export const updateUserStatusSchema = z.object({
+  active: z.boolean(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
+});
+

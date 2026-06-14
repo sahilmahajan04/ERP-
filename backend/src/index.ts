@@ -11,6 +11,8 @@ import purchaseRoutes from './routes/purchaseRoutes';
 import manufacturingRoutes from './routes/manufacturingRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
+import userRoutes from './routes/userRoutes';
+
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +44,8 @@ app.use('/api/v1/purchase', purchaseRoutes);
 app.use('/api/v1/manufacturing', manufacturingRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
+app.use('/api/v1/users', userRoutes);
+
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

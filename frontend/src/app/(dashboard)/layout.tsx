@@ -13,6 +13,7 @@ const MODULES = [
   { name: 'Purchase Orders', path: '/purchase', icon: '🛒', roles: ['ADMIN', 'PURCHASE_USER', 'BUSINESS_OWNER'] },
   { name: 'Manufacturing', path: '/manufacturing', icon: '⚙️', roles: ['ADMIN', 'MANUFACTURING_USER', 'BUSINESS_OWNER'] },
   { name: 'Reports', path: '/reports', icon: '📋', roles: ['ADMIN', 'BUSINESS_OWNER'] },
+  { name: 'Users', path: '/users', icon: '👥', roles: ['ADMIN'] },
   { name: 'Audit Logs', path: '/audit-logs', icon: '🔒', roles: ['ADMIN', 'BUSINESS_OWNER'] },
 ];
 
@@ -82,15 +83,18 @@ export default function DashboardLayout({
           </nav>
 
           <div className="pt-4 border-t border-slate-700/60">
-            <div className="flex items-center px-4 py-3 bg-slate-750/30 border border-slate-700/40 rounded-xl mb-4">
-              <div className="h-9 w-9 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white shadow-sm uppercase">
+            <Link
+              href="/profile"
+              className="flex items-center px-4 py-3 bg-slate-750/30 border border-slate-700/40 hover:border-slate-600 hover:bg-slate-700/50 rounded-xl mb-4 transition-all block cursor-pointer"
+            >
+              <div className="h-9 w-9 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white shadow-sm uppercase shrink-0">
                 {user.firstName[0]}
               </div>
               <div className="ml-3 overflow-hidden">
                 <p className="text-xs font-semibold text-white truncate">{user.firstName} {user.lastName}</p>
                 <p className="text-[10px] text-slate-400 capitalize truncate">{user.role.toLowerCase().replace('_', ' ')}</p>
               </div>
-            </div>
+            </Link>
 
             <button
               onClick={handleLogout}
