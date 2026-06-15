@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, getCurrentUser } from '../../lib/api';
 
 interface DashboardData {
   sales: { count: number; totalAmount: number };
@@ -17,13 +17,19 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
+
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['dashboardMetrics'],
     queryFn: () => api.get('/dashboard/metrics'),
     refetchInterval: 10000, // Auto refresh every 10s
   });
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">System Overview</h1>
@@ -37,21 +43,42 @@ export default function DashboardPage() {
   }
 
   if (error || !data) {
+    const errorMsg = error instanceof Error ? error.message : '';
+    const isPermissionError = errorMsg.toLowerCase().includes('permission') || errorMsg.toLowerCase().includes('denied') || errorMsg.toLowerCase().includes('unauthorized');
+
     return (
       <div className="p-8 text-center bg-red-950/20 border border-red-900 rounded-2xl text-red-400">
-        ❌ Failed to load system metrics. Please verify that the backend is running.
+        {isPermissionError ? (
+          <>❌ Access Denied: Your role does not have permission to view dashboard metrics.</>
+        ) : (
+          <>❌ Failed to load system metrics. Please verify that the backend is running.</>
+        )}
       </div>
     );
   }
 
-  const kpis = [
-    { name: 'Total Sales Orders', value: `₹${data.sales.totalAmount.toLocaleString()}`, sub: `${data.sales.count} Orders`, icon: '📈', color: 'from-blue-650 to-blue-800' },
-    { name: 'Total Purchases', value: `₹${data.purchases.totalAmount.toLocaleString()}`, sub: `${data.purchases.count} Purchase Orders`, icon: '🛒', color: 'from-purple-650 to-purple-800' },
-    { name: 'Active Manufacturing', value: data.activeManufacturing, sub: 'Confirmed & Running', icon: '⚙️', color: 'from-orange-550 to-orange-700' },
-    { name: 'Pending Deliveries', value: data.pendingDeliveries, sub: 'Awaiting Shipping dispatch', icon: '🚚', color: 'from-emerald-550 to-emerald-700' },
-    { name: 'Inventory Valuation', value: `₹${data.inventoryValue.toLocaleString()}`, sub: 'Asset cost valuation', icon: '📦', color: 'from-violet-550 to-violet-700' },
-    { name: 'Delayed Deliveries', value: data.delayedOrders, sub: 'Older than 3 days', icon: '⚠️', color: data.delayedOrders > 0 ? 'from-rose-550 to-rose-700 animate-pulse' : 'from-slate-550 to-slate-700' },
-  ];
+  const role = user?.role;
+  const showAll = role === 'ADMIN' || role === 'BUSINESS_OWNER';
+  const showSales = showAll || role === 'SALES_USER';
+  const showPurchase = showAll || role === 'PURCHASE_USER';
+  const showManufacturing = showAll || role === 'MANUFACTURING_USER';
+  const showInventory = showAll || role === 'INVENTORY_MANAGER';
+
+  const kpis = [];
+  if (showSales) {
+    kpis.push({ name: 'Total Sales Orders', value: `₹${data.sales.totalAmount.toLocaleString()}`, sub: `${data.sales.count} Orders`, icon: '📈', color: 'from-blue-650 to-blue-800' });
+    kpis.push({ name: 'Pending Deliveries', value: data.pendingDeliveries, sub: 'Awaiting Shipping dispatch', icon: '🚚', color: 'from-emerald-550 to-emerald-700' });
+    kpis.push({ name: 'Delayed Deliveries', value: data.delayedOrders, sub: 'Older than 3 days', icon: '⚠️', color: data.delayedOrders > 0 ? 'from-rose-550 to-rose-700 animate-pulse' : 'from-slate-550 to-slate-700' });
+  }
+  if (showPurchase) {
+    kpis.push({ name: 'Total Purchases', value: `₹${data.purchases.totalAmount.toLocaleString()}`, sub: `${data.purchases.count} Purchase Orders`, icon: '🛒', color: 'from-purple-650 to-purple-800' });
+  }
+  if (showManufacturing) {
+    kpis.push({ name: 'Active Manufacturing', value: data.activeManufacturing, sub: 'Confirmed & Running', icon: '⚙️', color: 'from-orange-550 to-orange-700' });
+  }
+  if (showInventory) {
+    kpis.push({ name: 'Inventory Valuation', value: `₹${data.inventoryValue.toLocaleString()}`, sub: 'Asset cost valuation', icon: '📦', color: 'from-violet-550 to-violet-700' });
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -92,41 +119,43 @@ export default function DashboardPage() {
       </div>
 
       {/* Double Column section for Alerts & Activities */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className={`grid grid-cols-1 ${showInventory ? 'lg:grid-cols-2' : ''} gap-8`}>
         {/* Low Stock Alerts */}
-        <div className="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm space-y-4">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center">
-              ⚠️ Low Stock Alert Levels
-            </h3>
-            <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
-              {data.lowStockCount} Products Short
-            </span>
-          </div>
+        {showInventory && (
+          <div className="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center">
+                ⚠️ Low Stock Alert Levels
+              </h3>
+              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
+                {data.lowStockCount} Products Short
+              </span>
+            </div>
 
-          <div className="overflow-y-auto max-h-[300px] divide-y divide-slate-100 dark:divide-slate-700/60">
-            {data.lowStockProducts.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">
-                ✅ All inventory parameters are optimal. No shortages.
-              </div>
-            ) : (
-              data.lowStockProducts.map((p, idx) => (
-                <div key={idx} className="py-3 flex justify-between items-center text-sm">
-                  <div>
-                    <span className="font-semibold text-slate-850 dark:text-slate-200">{p.name}</span>
-                    <span className="ml-2 px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-650 dark:bg-slate-750 dark:text-slate-350">
-                      SKU: {p.sku}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-slate-400 mr-2">WH: {p.warehouse}</span>
-                    <span className="font-bold text-red-500">{p.available} available</span>
-                  </div>
+            <div className="overflow-y-auto max-h-[300px] divide-y divide-slate-100 dark:divide-slate-700/60">
+              {data.lowStockProducts.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-sm">
+                  ✅ All inventory parameters are optimal. No shortages.
                 </div>
-              ))
-            )}
+              ) : (
+                data.lowStockProducts.map((p, idx) => (
+                  <div key={idx} className="py-3 flex justify-between items-center text-sm">
+                    <div>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">{p.name}</span>
+                      <span className="ml-2 px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-650 dark:bg-slate-750 dark:text-slate-350">
+                        SKU: {p.sku}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-slate-400 mr-2">WH: {p.warehouse}</span>
+                      <span className="font-bold text-red-500">{p.available} available</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recent System Activity Logs */}
         <div className="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm space-y-4">

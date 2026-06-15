@@ -13,7 +13,7 @@ import { Role } from '@prisma/client';
 const router = Router();
 
 // Dashboard general metrics card
-router.get('/metrics', authenticateToken, authorizeRoles(Role.ADMIN, Role.BUSINESS_OWNER), getDashboardMetrics);
+router.get('/metrics', authenticateToken, authorizeRoles(Role.ADMIN, Role.BUSINESS_OWNER, Role.SALES_USER, Role.PURCHASE_USER, Role.MANUFACTURING_USER, Role.INVENTORY_MANAGER), getDashboardMetrics);
 
 // Reports
 router.get('/reports/sales', authenticateToken, authorizeRoles(Role.ADMIN, Role.BUSINESS_OWNER), getSalesReport);

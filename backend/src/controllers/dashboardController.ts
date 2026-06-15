@@ -3,82 +3,130 @@ import { prisma } from '../config/db';
 
 export const getDashboardMetrics = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    const role = user?.role;
+
+    const showAll = role === 'ADMIN' || role === 'BUSINESS_OWNER';
+    const showSales = showAll || role === 'SALES_USER';
+    const showPurchase = showAll || role === 'PURCHASE_USER';
+    const showManufacturing = showAll || role === 'MANUFACTURING_USER';
+    const showInventory = showAll || role === 'INVENTORY_MANAGER';
+
     // 1. Total Sales Orders
-    const salesCount = await prisma.salesOrder.count();
-    const salesSum = await prisma.salesOrder.aggregate({
-      _sum: { totalAmount: true },
-    });
+    let salesCount = 0;
+    let salesSum: any = { _sum: { totalAmount: 0 } };
+    if (showSales) {
+      salesCount = await prisma.salesOrder.count();
+      salesSum = await prisma.salesOrder.aggregate({
+        _sum: { totalAmount: true },
+      });
+    }
 
     // 2. Pending Deliveries
-    const pendingDeliveriesCount = await prisma.salesOrder.count({
-      where: {
-        status: { in: ['CONFIRMED', 'PARTIALLY_DELIVERED'] },
-      },
-    });
+    let pendingDeliveriesCount = 0;
+    if (showSales) {
+      pendingDeliveriesCount = await prisma.salesOrder.count({
+        where: {
+          status: { in: ['CONFIRMED', 'PARTIALLY_DELIVERED'] },
+        },
+      });
+    }
 
     // 3. Total Purchase Orders
-    const purchaseCount = await prisma.purchaseOrder.count();
-    const purchaseSum = await prisma.purchaseOrder.aggregate({
-      _sum: { totalAmount: true },
-    });
+    let purchaseCount = 0;
+    let purchaseSum: any = { _sum: { totalAmount: 0 } };
+    if (showPurchase) {
+      purchaseCount = await prisma.purchaseOrder.count();
+      purchaseSum = await prisma.purchaseOrder.aggregate({
+        _sum: { totalAmount: true },
+      });
+    }
 
     // 4. Active Manufacturing Orders
-    const activeMOsCount = await prisma.manufacturingOrder.count({
-      where: {
-        status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
-      },
-    });
+    let activeMOsCount = 0;
+    if (showManufacturing) {
+      activeMOsCount = await prisma.manufacturingOrder.count({
+        where: {
+          status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+        },
+      });
+    }
 
     // 5. Inventory Value (Sum of onHand * costPrice)
-    const inventories = await prisma.inventory.findMany({
-      include: {
-        product: { select: { costPrice: true } },
-      },
-    });
-
     let totalInventoryValue = 0;
-    inventories.forEach((inv) => {
-      totalInventoryValue += Number(inv.onHand) * Number(inv.product.costPrice);
-    });
+    if (showInventory) {
+      const inventories = await prisma.inventory.findMany({
+        include: {
+          product: { select: { costPrice: true } },
+        },
+      });
+      inventories.forEach((inv) => {
+        totalInventoryValue += Number(inv.onHand) * Number(inv.product.costPrice);
+      });
+    }
 
     // 6. Low Stock Products (availableQty = onHand - reserved < 10)
-    const rawInventories = await prisma.inventory.findMany({
-      include: {
-        product: { select: { sku: true, name: true } },
-        warehouse: { select: { code: true } },
-      },
-    });
-
-    const lowStockAlerts = rawInventories
-      .map((inv) => ({
-        sku: inv.product.sku,
-        name: inv.product.name,
-        warehouse: inv.warehouse.code,
-        onHand: Number(inv.onHand),
-        reserved: Number(inv.reserved),
-        available: Number(inv.onHand) - Number(inv.reserved),
-      }))
-      .filter((item) => item.available < 10);
+    let lowStockAlerts: any[] = [];
+    if (showInventory) {
+      const rawInventories = await prisma.inventory.findMany({
+        include: {
+          product: { select: { sku: true, name: true } },
+          warehouse: { select: { code: true } },
+        },
+      });
+      lowStockAlerts = rawInventories
+        .map((inv) => ({
+          sku: inv.product.sku,
+          name: inv.product.name,
+          warehouse: inv.warehouse.code,
+          onHand: Number(inv.onHand),
+          reserved: Number(inv.reserved),
+          available: Number(inv.onHand) - Number(inv.reserved),
+        }))
+        .filter((item) => item.available < 10);
+    }
 
     // 7. Delayed Orders (CONFIRMED but older than 3 days)
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-    const delayedOrdersCount = await prisma.salesOrder.count({
-      where: {
-        status: { in: ['CONFIRMED', 'PARTIALLY_DELIVERED'] },
-        createdAt: { lt: threeDaysAgo },
-      },
-    });
+    let delayedOrdersCount = 0;
+    if (showSales) {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      delayedOrdersCount = await prisma.salesOrder.count({
+        where: {
+          status: { in: ['CONFIRMED', 'PARTIALLY_DELIVERED'] },
+          createdAt: { lt: threeDaysAgo },
+        },
+      });
+    }
 
     // 8. Recent Activities (last 10 audit logs)
-    const recentLogs = await prisma.auditLog.findMany({
-      include: {
-        user: { select: { firstName: true, lastName: true } },
-      },
-      orderBy: { timestamp: 'desc' },
-      take: 10,
-    });
+    let recentLogs;
+    if (showAll) {
+      recentLogs = await prisma.auditLog.findMany({
+        include: {
+          user: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 10,
+      });
+    } else {
+      let allowedModules: string[] = [];
+      if (role === 'SALES_USER') allowedModules = ['SALES', 'CUSTOMER'];
+      if (role === 'PURCHASE_USER') allowedModules = ['PURCHASE', 'VENDOR'];
+      if (role === 'MANUFACTURING_USER') allowedModules = ['MANUFACTURING', 'BOM'];
+      if (role === 'INVENTORY_MANAGER') allowedModules = ['INVENTORY', 'PRODUCT', 'WAREHOUSE'];
+
+      recentLogs = await prisma.auditLog.findMany({
+        where: {
+          module: { in: allowedModules },
+        },
+        include: {
+          user: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 10,
+      });
+    }
 
     const activities = recentLogs.map((log) => ({
       id: log.id,
