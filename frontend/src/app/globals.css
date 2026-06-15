@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+@theme {
+  --color-slate-105: #f1f5f9;
+  --color-slate-205: #cbd5e1;
+  --color-slate-450: #64748b;
+  --color-slate-505: #475569;
+  --color-slate-550: #475569;
+  --color-slate-805: #1e293b;
+  --color-slate-850: #1e293b;
+  --color-slate-855: #0f172a;
+
+  --color-blue-105: #dbeafe;
+  --color-blue-805: #1e40af;
+  --color-blue-850: #1e3a8a;
+
+  --color-orange-105: #ffedd5;
+  --color-orange-850: #7c2d12;
+  --color-orange-855: #7c2d12; /* High contrast dark orange */
+
+  --color-emerald-105: #d1fae5;
+  --color-emerald-850: #064e3b;
+  --color-emerald-855: #065f46;
+
+  --color-green-100: #dcfce7;
+  --color-green-850: #14532d;
+
+  --color-red-105: #fee2e2;
+  --color-red-850: #7f1d1d;
+  --color-red-855: #991b1b;
+  --color-red-505: #dc2626;
+  
+  --color-indigo-650: #4f46e5;
+  --color-indigo-750: #4338ca;
+  --color-indigo-850: #3730a3;
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -10,11 +45,11 @@
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
   
-  --secondary: #64748b;
+  --secondary: #334155; /* Higher contrast slate-700 */
   --secondary-foreground: #ffffff;
   
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted-foreground: #475569; /* Higher contrast slate-600 */
   
   --accent: #e0e7ff;
   --accent-foreground: #4f46e5;
@@ -22,7 +57,7 @@
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --border: #e2e8f0;
+  --border: #cbd5e1; /* Higher contrast border slate-300 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,16 +71,16 @@
     --primary: #6366f1;
     --primary-foreground: #ffffff;
     
-    --secondary: #475569;
+    --secondary: #1e293b; /* Higher contrast slate-800 */
     --secondary-foreground: #f8fafc;
     
     --muted: #334155;
-    --muted-foreground: #94a3b8;
+    --muted-foreground: #cbd5e1; /* Higher contrast slate-300 */
     
     --accent: #312e81;
     --accent-foreground: #e0e7ff;
     
-    --border: #334155;
+    --border: #475569; /* Higher contrast border slate-600 */
   }
 }
 
@@ -60,13 +95,13 @@ body {
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid rgba(203, 213, 225, 0.85); /* Slate-300 border for light glass */
 }
 
 .dark .glass-panel {
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(71, 85, 105, 0.65); /* Slate-600 border for dark glass */
 }
 
 .shadow-premium {
@@ -74,7 +109,8 @@ body {
 }
 
 .gradient-bg {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%) !important; /* Slightly darker indigo/violet gradient */
+  color: #ffffff !important;
 }
 
 .gradient-text {
@@ -100,6 +136,123 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25) !important;
+}
+
+/* Keyboard navigation accessibility focus ring */
+*:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* ==========================================
+   GLOBAL UI ACCESSIBILITY & CONTRAST FIXES
+   ========================================== */
+
+/* 1. Global Forms, Inputs, Selects & Options readability styling */
+input, select, textarea {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Set high contrast dark text on white backgrounds for light mode select options */
+option, select option, select optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Set high contrast white text on dark backgrounds for dark mode select options */
+@media (prefers-color-scheme: dark) {
+  option, select option, select optgroup {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+  }
+}
+
+/* Placeholders: ensure they have high contrast, opacity, and are readable */
+input::placeholder, textarea::placeholder {
+  color: #64748b !important; /* Slate-500 equivalent */
+  opacity: 1 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  input::placeholder, textarea::placeholder {
+    color: #94a3b8 !important; /* Slate-400 equivalent */
+    opacity: 1 !important;
+  }
+}
+
+/* Disabled & Read-Only elements visibility with high contrast */
+input:disabled, textarea:disabled, select:disabled,
+input[readonly], textarea[readonly], select[readonly] {
+  background-color: var(--muted) !important;
+  color: var(--foreground) !important;
+  -webkit-text-fill-color: var(--foreground) !important; /* Retains readability in webkit browsers */
+  opacity: 0.9 !important; /* Ensure readable contrast while still indicating disabled state */
+  cursor: not-allowed;
+  border-color: var(--border) !important;
+}
+
+/* 2. Global Modals Contrast & Background Overrides */
+.fixed.inset-0, [role="dialog"] {
+  color: var(--foreground) !important;
+}
+
+/* Global modal box override to prevent hardcoded white backgrounds in dark mode */
+.fixed.inset-0 .bg-white, [role="dialog"] .bg-white {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+.fixed.inset-0 label, [role="dialog"] label {
+  color: var(--foreground) !important;
+  font-weight: 600 !important;
+}
+
+.fixed.inset-0 h1, .fixed.inset-0 h2, .fixed.inset-0 h3, .fixed.inset-0 h4,
+[role="dialog"] h1, [role="dialog"] h2, [role="dialog"] h3, [role="dialog"] h4 {
+  color: var(--foreground) !important;
+  font-weight: 800 !important;
+}
+
+.fixed.inset-0 p, .fixed.inset-0 span:not(.font-bold):not(.rounded-full),
+[role="dialog"] p, [role="dialog"] span:not(.font-bold):not(.rounded-full) {
+  color: var(--foreground) !important;
+}
+
+/* 3. Global Tables Contrast Overrides */
+table th {
+  color: #334155 !important; /* High contrast Slate-700 in light mode */
+  font-weight: 700 !important;
+  border-bottom: 2px solid var(--border) !important;
+}
+
+table td {
+  color: #0f172a !important; /* High contrast Slate-900 in light mode */
+}
+
+table, table th, table td, table tr {
+  border-color: var(--border) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  table th {
+    color: #cbd5e1 !important; /* High contrast Slate-300 in dark mode */
+  }
+  table td {
+    color: #f8fafc !important; /* High contrast Slate-50 in dark mode */
+  }
+}
+
+/* 4. Global Secondary Action Buttons Override */
+button[type="button"] {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+}
+
+button[type="button"]:hover {
+  background-color: var(--muted) !important;
 }
