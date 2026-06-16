@@ -155,3 +155,34 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
 });
 
+// Inventory validation schemas
+export const adjustInventorySchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  warehouseId: z.string().uuid('Invalid warehouse ID'),
+  adjustmentQty: z.number().refine(val => val !== 0, 'Adjustment quantity cannot be 0'),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
+export const transferInventorySchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  srcWarehouseId: z.string().uuid('Invalid source warehouse ID'),
+  destWarehouseId: z.string().uuid('Invalid destination warehouse ID'),
+  quantity: z.number().positive('Quantity must be greater than 0'),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
+export const stockInSchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  warehouseId: z.string().uuid('Invalid warehouse ID'),
+  quantity: z.number().positive('Quantity must be greater than 0'),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
+export const stockOutSchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  warehouseId: z.string().uuid('Invalid warehouse ID'),
+  quantity: z.number().positive('Quantity must be greater than 0'),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
+
